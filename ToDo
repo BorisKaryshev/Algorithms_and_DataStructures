@@ -1,0 +1,26 @@
+I. Sorting algorithms.
+    1) Buble sort.          DONE
+    2) Insertion sort.      
+    3) Selection sort.      DONE
+    4) Counting sort.       
+    5) Shell sort.          
+    6) Merge sort.          
+    7) Quick sort.          
+    8) Heap sort.
+    9) Radix sort.
+    10) Bucket sort.
+    BONUS: BOGO sort.
+
+Basic algorithms set for DS is insert, delete, find.
+II. Data structures and some algorithms.
+    1) Stack.
+    2) Queue.
+    3) List.
+    4) Tree.
+        a) Recursive traversal.
+        b) Iterative traversal.
+    5) Binary tree.
+    6) Red-white tree.
+    7) Hash table.
+        a) Auto expanding if needed.
+    8) Priority queue.
