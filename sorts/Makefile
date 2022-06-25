@@ -3,7 +3,7 @@ default_target: all
 CC = gcc
 PROG = main
 OBJS = ./objs/main.o ./objs/sorting_algorithms.o ./objs/array_t.o
-OL = 3
+OL = 0
 
 all: $(OBJS)
 	@$(CC) $(OBJS) -o $(PROG)

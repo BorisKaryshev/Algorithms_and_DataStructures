@@ -19,4 +19,8 @@ void buble_sort(array_t, int (*is_bigger)(const array_t arr, const size_t i, con
 
 void selection_sort(array_t ar, int (*is_bigger)(const array_t arr, const size_t i, const size_t j));
 
+void insertion_sort(array_t ar, int (*is_bigger)(const array_t arr, const size_t i, const size_t j));
+
+void shell_sort(array_t ar, int (*is_bigger)(const array_t arr, const size_t i, const size_t j));
+
 #endif

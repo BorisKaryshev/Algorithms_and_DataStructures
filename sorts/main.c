@@ -3,11 +3,11 @@
 #include <time.h>
 
 ARRAY_TYPE gen(const size_t i) {
-    return rand() ;
+    return rand()%70 + 1;
 }
 
 int cmp(const array_t ar, const size_t i, const size_t j) {
-    return ar.ptr[i] > ar.ptr[j];
+    return (ar.ptr[i]/10) % 10 < (ar.ptr[j]/10) % 10;
 }
 
 #define print(a) { \
@@ -40,14 +40,21 @@ void test_sort(const array_t ar, void (*sort)(array_t a, int (*is_bigger)(const 
 }
 
 int main(void) {
-    size_t sz = 20000;
+    size_t sz = 100;
     srand(time(NULL));
     array_t ar = init_array(sz, gen);
 
-    test_sort(ar, buble_sort);
-    test_sort(ar, selection_sort);
+    
+
+    //test_sort(ar, buble_sort);
+    //test_sort(ar, selection_sort);
+    test_sort(ar, insertion_sort); 
+    test_sort(ar, shell_sort);
+    shell_sort(ar, cmp);
+    print(ar);
 
     destroy_array(ar);
+    
 
     return 0;
 }
