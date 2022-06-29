@@ -2,6 +2,8 @@
 #define STRUCTS
 #include <stddef.h>
 
+/* LIST */
+
 #define LIST_TYPE int 
 typedef struct ListNode {
     LIST_TYPE value;
@@ -19,6 +21,8 @@ int list_delete_value(pListNode list, const LIST_TYPE value, int (*is_equal)(con
 pListNode create_list(size_t length, LIST_TYPE (*generator)(const size_t i));
 void free_list(pListNode list);
 
+/* STACK */
+
 #define STACK_TYPE LIST_TYPE
 typedef struct stack_s {
     pListNode first;
@@ -29,6 +33,8 @@ void free_stack(stack_pt);
 
 STACK_TYPE stack_pop(stack_pt);
 void stack_push(stack_pt, STACK_TYPE);
+
+/* QUEUE */
 
 #define QUEUE_TYPE LIST_TYPE
 typedef struct queue_s {

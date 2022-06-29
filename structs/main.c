@@ -1,32 +1,30 @@
-#include <stdio.h>
+#include <time.h>
 #include "structs.h"
+#include "trees.h"
 
-LIST_TYPE list_gen(const size_t i) {
-    return i;
+#define SIZE 30
+
+BIN_TREE_TYPE gen(const size_t i) {
+        return rand()%SIZE;
 }
-void print_list(pListNode list) {
-    for(; list != NULL; list= list->next) {
-        printf("%d ", list->value);
+int cmp(const BIN_TREE_TYPE a, const BIN_TREE_TYPE b) {
+    return a < b;
+}
+
+void print(BIN_TREE_TYPE *val) {
+    printf("%2d ", *val);
+}
+
+int main() { 
+    for(int i = 0; i < 10000; i++){
+        pb_tree_t out = create_bin_tree(10000, gen, cmp);
+        
+        int x = rand()%SIZE;
+        while(bin_tree_delete(x, out));
+        
+        free_bin_tree(out);
+        if (i%100 == 0) 
+            printf("|%d|\n", i);
     }
-    putchar('\n');
-}
-int list_eq(const LIST_TYPE a, const LIST_TYPE b) {
-    return a == b;
-}
-
-int main() {
-    queue_pt q = create_queue(0, list_gen);
-    queue_push(q, 100);
-    queue_push(q, 31);
-    
-    queue_push(q, -852);
-
-    QUEUE_TYPE i;
-    while((i = queue_pop(q)) != 0) {
-        printf("%d ", i);
-    }
-    putchar('\n');
-
-    free_queue(q);
     return 0;
 }

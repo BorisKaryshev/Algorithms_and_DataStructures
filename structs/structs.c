@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+/* LIST */
+
 void list_push_back(pListNode list, const LIST_TYPE value){
     if (list == NULL)
         return;
@@ -73,6 +75,8 @@ void list_push_forward(pListNode list, const LIST_TYPE value) {
     list->prev->value = value;
 }
 
+/* STACK */
+
 stack_pt create_stack(size_t length, STACK_TYPE (*generator) (const size_t i)) {
     stack_pt out = (stack_pt) malloc(sizeof(struct stack_s));
     if (length == 0) {
@@ -117,6 +121,8 @@ void stack_push(stack_pt st, STACK_TYPE val) {
 
 }
 
+/* QUEUE */
+
 queue_pt create_queue(size_t length, QUEUE_TYPE (*generator)(const size_t i)) {
     queue_pt out = (queue_pt) malloc(sizeof(struct queue_s));
     if (length == 0) {
@@ -156,7 +162,7 @@ QUEUE_TYPE queue_pop(queue_pt q){
 
         return out;
     }
-    //puts("ERROR: queue is empty.");
+    puts("ERROR: queue is empty.");
     return 0;
 }
 

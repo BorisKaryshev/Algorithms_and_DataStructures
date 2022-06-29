@@ -1,22 +1,25 @@
 default_target: all
 
 CC = gcc
-OL = 0
+OL = 
 PROG = main
-OBJS = ./objs/main.o ./objs/structs.o
+OBJS = ./objs/main.o ./objs/structs.o ./objs/trees.o
 
 all: $(OBJS)
-	@$(CC) $(OBJS) -o $(PROG)
+	$(CC) $(OBJS) -o $(PROG)
 
-./objs/main.o: main.c structs.h
-	@$(CC) -O$(OL) -c main.c -o ./objs/main.o
+./objs/main.o: main.c structs.h trees.h
+	$(CC) $(OL) -c main.c -o ./objs/main.o
 
 
 ./objs/structs.o: structs.c structs.h
-	@$(CC) -O$(OL) -c structs.c -o ./objs/structs.o
+	$(CC) $(OL) -c structs.c -o ./objs/structs.o
+
+./objs/trees.o: trees.c trees.h
+	$(CC) $(OL) -c trees.c -o ./objs/trees.o
 
 clean:
-	@rm -r objs
-	@rm $(PROG)
+	rm -r objs
+	rm $(PROG)
 
 $(shell mkdir -p objs)
