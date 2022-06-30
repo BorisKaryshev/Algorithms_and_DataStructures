@@ -18,7 +18,7 @@ II. Data structures and some algorithms.
     3) List.                        DONE
     4) Binary tree.                 DONE   
         a) Recursive traversal.     DONE
-    5) AVL tree.         
+    5) AVL tree.                    DONE
     6) Red-white tree.
     7) Hash table.
         a) Auto expanding if needed.

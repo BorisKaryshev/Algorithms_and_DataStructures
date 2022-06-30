@@ -1,30 +1,25 @@
 #include <time.h>
-#include "structs.h"
-#include "trees.h"
+#include <stdlib.h>
+#include <stdio.h>
+//#include "structs.h"
+//#include "trees.h"
+#include "hash_table.h"
 
-#define SIZE 30
+int main() {
+    srand(time(NULL));
+    phash_table_t ptbl = hash_table_init();
+    struct data_s data[3] = {{1, "one"}, {2, "too"}, {3, "three"}};
+    hash_table_append(ptbl, &data[0]);
+    hash_table_append(ptbl, &data[1]);
+    hash_table_append(ptbl, &data[2]);
 
-BIN_TREE_TYPE gen(const size_t i) {
-        return rand()%SIZE;
-}
-int cmp(const BIN_TREE_TYPE a, const BIN_TREE_TYPE b) {
-    return a < b;
-}
-
-void print(BIN_TREE_TYPE *val) {
-    printf("%2d ", *val);
-}
-
-int main() { 
-    for(int i = 0; i < 10000; i++){
-        pb_tree_t out = create_bin_tree(10000, gen, cmp);
-        
-        int x = rand()%SIZE;
-        while(bin_tree_delete(x, out));
-        
-        free_bin_tree(out);
-        if (i%100 == 0) 
-            printf("|%d|\n", i);
+    for(int i = 0 ; i < 3; i++) {
+        HASH_TABLE_TYPE *p;
+        if((p = hash_get_by_key(ptbl, data[i].name)) != NULL)
+            printf("%d\n", *p);
     }
+
+    free_hash_table(ptbl);
+    putchar('\n');
     return 0;
 }
