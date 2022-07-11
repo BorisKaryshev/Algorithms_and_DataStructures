@@ -4,47 +4,50 @@
 
 /* LIST */
 
-#define LIST_TYPE int 
 typedef struct ListNode {
-    LIST_TYPE value;
+    void *value;
     struct ListNode *next;
     struct ListNode *prev;
 }* pListNode;
 
-void list_push_back(pListNode list, const LIST_TYPE value);
-void list_push_forward(pListNode list, const LIST_TYPE value);
+typedef struct list_s {
+    pListNode list;
+} *plist_t;
 
-int list_delete_index(pListNode list, const size_t index);
+void list_push_back(plist_t list, void *value);
+void list_push_forward(plist_t list, void *value);
 
-int list_delete_value(pListNode list, const LIST_TYPE value, int (*is_equal)(const LIST_TYPE a, const LIST_TYPE b));
+int list_delete_index(plist_t list, const size_t index, void (*destroy)(void *));
 
-pListNode create_list(size_t length, LIST_TYPE (*generator)(const size_t i));
-void free_list(pListNode list);
+int list_delete_value(plist_t list, void *value, int (*is_equal)(void *, void *), void (*destroy)(void *));
+
+plist_t create_list(size_t length, void* (*generator)(const size_t i));
+void free_list(plist_t list, void (*destroy)(void *));
+
+void list_for_each(plist_t list, void(*to_do)(void*));
 
 /* STACK */
 
-#define STACK_TYPE LIST_TYPE
 typedef struct stack_s {
     pListNode first;
 }* stack_pt;
 
-stack_pt create_stack(size_t length, STACK_TYPE (*generator) (const size_t i));
-void free_stack(stack_pt);
+stack_pt create_stack(size_t length, void* (*generator) (const size_t i));
+void free_stack(stack_pt, void (*destroy)(void*));
 
-STACK_TYPE stack_pop(stack_pt);
-void stack_push(stack_pt, STACK_TYPE);
+void* stack_pop(stack_pt);
+void stack_push(stack_pt, void *);
 
 /* QUEUE */
 
-#define QUEUE_TYPE LIST_TYPE
 typedef struct queue_s {
     pListNode first, last;
 }* queue_pt;
 
-queue_pt create_queue(size_t length, QUEUE_TYPE (*generator)(const size_t i));
-void queue_push(queue_pt q, QUEUE_TYPE val);
-QUEUE_TYPE queue_pop(queue_pt q);
-void free_queue(queue_pt q);
+queue_pt create_queue(size_t length, void* (*generator)(const size_t i));
+void queue_push(queue_pt q, void* val);
+void* queue_pop(queue_pt q);
+void free_queue(queue_pt q, void (*destroy)(void*));
 
 
 #endif

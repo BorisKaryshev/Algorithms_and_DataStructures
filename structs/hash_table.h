@@ -29,7 +29,7 @@ struct hash_table_s {
 typedef struct hash_table_s *phash_table_t;
 
 phash_table_t hash_table_init();
-phash_table_t create_hash_table(size_t number_of_possible_elem, size_t (*hash)(const char *name, size_t size));
+phash_table_t create_hash_table(size_t number_of_possible_elem, size_t (*hash)(const char *name, size_t size)) ;
 
 void hash_table_append(phash_table_t, pdata_t);
 int hash_table_delete(phash_table_t, pdata_t);

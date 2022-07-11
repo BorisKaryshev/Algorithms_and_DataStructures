@@ -374,17 +374,27 @@ phash_table_t hash_table_init() {
     return create_hash_table(100, hash);
 }
 
-/*
+
 static void expand_table(phash_table_t ptable) {
-    p_hash_avl_tree_t *tmp = (p_hash_avl_tree_t *) malloc(number_of_possible_elem*sizeof(p_hash_avl_tree_t));
+    ptable->size *= 10;
+    p_hash_avl_tree_t *tmp = (p_hash_avl_tree_t *) malloc(ptable->size * sizeof(p_hash_avl_tree_t));
+    size_t i = 0;
+    void copy(pdata_t *pd) {
+        hash_avl_tree_append(*pd, tmp[ptable->hash((*pd)->name, ptable->size)]);
+    }
+
+    for(; i < ptable->size/10; i++) {
+        hash_avl_tree_for_each(ptable->arr[i], copy);
+        free_hash_avl_tree(ptable->arr[i]);
+    }
+    ptable->arr = tmp;
 }
-*/
+
 void hash_table_append(phash_table_t ptable, pdata_t pd) {
     ptable->number_of_elements++;
-    /*
+    
     if(ptable->number_of_elements > 1000*ptable->size) 
         expand_table(ptable);
-    */
     hash_avl_tree_append(pd, ptable->arr[ptable->hash(pd->name, ptable->size)]);
 }
 int hash_table_delete(phash_table_t ptable, pdata_t pd) {

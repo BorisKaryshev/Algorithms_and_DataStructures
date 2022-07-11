@@ -4,7 +4,8 @@
 
 /* LIST */
 
-void list_push_back(pListNode list, const LIST_TYPE value){
+void list_push_back(plist_t pl, void *value){
+    pListNode list = pl->list;
     if (list == NULL)
         return;
     
@@ -15,7 +16,8 @@ void list_push_back(pListNode list, const LIST_TYPE value){
     list->next->value = value;
 }
 
-int list_delete_index(pListNode list, const size_t index){
+int list_delete_index(plist_t pl, const size_t index, void (*destroy)(void *)){
+    pListNode list = pl->list; 
     for (; index > 0 && list->next != NULL; list = list->next);
     if (index > 0)
         return 0;
@@ -23,11 +25,13 @@ int list_delete_index(pListNode list, const size_t index){
     list->prev->next = list->next;
     if (list->next != NULL)
         list->next->prev = list->prev;
+    destroy(list->value);
     free(list);
     return 1;
 }
 
-int list_delete_value(pListNode list, const LIST_TYPE value, int (*is_equal)(const LIST_TYPE a, const LIST_TYPE b)) {
+int list_delete_value(plist_t pl, void *value, int (*is_equal)(void *, void *), void (*destroy)(void *)) {
+    pListNode list = pl->list; 
     if(list->next != NULL)
         list = list->next;
     for(;!is_equal(list->value, value) && list->next != NULL; list = list->next);
@@ -38,11 +42,12 @@ int list_delete_value(pListNode list, const LIST_TYPE value, int (*is_equal)(con
     if(list->next != NULL)
         list->next->prev = list->prev;
 
+    destroy(list->value);
     free(list);
     return 1;
 }
 
-pListNode create_list(size_t length, LIST_TYPE (*generator)(const size_t i)) {
+plist_t create_list(size_t length, void* (*generator)(const size_t i)) {
     pListNode first = (pListNode) malloc(sizeof(struct ListNode));
     first->prev = NULL;
     pListNode current = first;
@@ -55,63 +60,84 @@ pListNode create_list(size_t length, LIST_TYPE (*generator)(const size_t i)) {
     current->value = generator(length);
     current->next = NULL;
 
-    return first;
+    plist_t out = malloc(sizeof(struct list_s));
+    out->list = first;
+    return out;
 }
 
-void free_list(pListNode list) {
+void free_list(plist_t pl, void (*destroy)(void *)) {
+    pListNode list = pl->list; 
     if (list == NULL)
         return;
     if (list->next != NULL)
         list = list->next;
-    for(; list->next != NULL; list = list->next);
+    for(; list->next != NULL; list = list->next){
+        destroy(list->prev->value);
         free(list->prev);
+    }
+    destroy(list->value);
     free(list);
+    free(pl);
 }
 
-void list_push_forward(pListNode list, const LIST_TYPE value) {
+
+void list_push_forward(plist_t pl, void *value) {
+    pListNode list = pl->list; 
     list->prev = (pListNode) malloc(sizeof(struct ListNode));
     list->prev->next = list;
     list->prev->prev = NULL;
     list->prev->value = value;
 }
 
+static void free_plist(pListNode pnode, void (*destroy)(void*)) {
+    pListNode prev = pnode;
+    for(;pnode; pnode = pnode->next) {
+        destroy(prev->value);
+        free(prev);
+        prev = pnode;
+    }
+}
 /* STACK */
 
-stack_pt create_stack(size_t length, STACK_TYPE (*generator) (const size_t i)) {
+stack_pt create_stack(size_t length, void* (*generator) (const size_t i)) {
     stack_pt out = (stack_pt) malloc(sizeof(struct stack_s));
     if (length == 0) {
         out->first = NULL;
         return out;
     }
-    out->first = create_list(length, generator);
+    plist_t tmp = create_list(length, generator);
+    out->first = tmp->list;
+    free(tmp);
     return out;
 }
-void free_stack(stack_pt st) {
-    free_list(st->first);
+void free_stack(stack_pt st, void (*destroy)(void*)) {
+    free_plist(st->first, destroy);
     st->first = NULL;
     free(st);
 }
 
-STACK_TYPE stack_pop(stack_pt st) {
+void* stack_pop(stack_pt st) {
     if (st->first != NULL) {
-        STACK_TYPE val = st->first->value;
-        pListNode tmp = st->first;
-        st->first = tmp->next;
-        if (st->first != NULL)
-            st->first->prev = NULL;
-        free(tmp);
-        
-
-        return val;
+        return st->first->value;
     }
     puts("ERROR: stack is empty.");
-    return 0;
+    return NULL;
+}
+void list_for_each(plist_t pl, void(*to_do)(void*)) {
+    pListNode list = pl->list;
+    for(;list; list = list->next) {
+        to_do(list->value);
+    }
 }
 
-void stack_push(stack_pt st, STACK_TYPE val) {
+
+void stack_push(stack_pt st, void* val) {
     if(st->first != NULL) {
-        list_push_forward(st->first, val);
+        st->first->prev = malloc(sizeof(struct ListNode));
+        st->first->prev->next = st->first;
         st->first = st->first->prev;
+        st->first->value = val;
+        st->first->prev = NULL;
     } else {
         st->first = (pListNode) malloc(sizeof(struct ListNode));
         st->first->next = NULL;
@@ -123,24 +149,30 @@ void stack_push(stack_pt st, STACK_TYPE val) {
 
 /* QUEUE */
 
-queue_pt create_queue(size_t length, QUEUE_TYPE (*generator)(const size_t i)) {
+queue_pt create_queue(size_t length, void* (*generator)(const size_t i)) {
     queue_pt out = (queue_pt) malloc(sizeof(struct queue_s));
     if (length == 0) {
         out->first = NULL;
         out->last = NULL;
         return out;
     }
-    out->first = create_list(length, generator);
-    pListNode tmp = out->first;
-    for(; tmp->next!=NULL; tmp=tmp->next);
-    out->last = tmp;
+    plist_t tmp = create_list(length, generator);
+    out->first = tmp->list;
+    free(tmp);
+    pListNode temp = out->first;
+    for(; temp->next!=NULL; temp=temp->next);
+    out->last = temp;
 
     return out;
 }
-void queue_push(queue_pt q, QUEUE_TYPE val) {
+void queue_push(queue_pt q, void* val) {
     if (q->first != NULL) {
-        list_push_forward(q->first, val);
-        q->first = q->first->prev;
+        pListNode tmp = malloc(sizeof(struct ListNode));
+        tmp->value = val;
+        tmp->next = q->first;
+        tmp->prev = NULL;
+        q->first->prev = tmp;
+        q->first = tmp;
     } else {
         q->first = (pListNode) malloc(sizeof(struct ListNode));
         q->first->next = NULL;
@@ -149,24 +181,15 @@ void queue_push(queue_pt q, QUEUE_TYPE val) {
         q->last = q->first;
     }
 }
-QUEUE_TYPE queue_pop(queue_pt q){
+void* queue_pop(queue_pt q){
     if (q->last != NULL) {
-        QUEUE_TYPE out = q->last->value;
-        pListNode tmp = q->last;
-        q->last = tmp->prev;
-        if(q->last != NULL)
-            q->last->next = NULL;
-        else
-            q->first = NULL;
-        free(tmp);
-
-        return out;
+        return q->last->value;
     }
     puts("ERROR: queue is empty.");
     return 0;
 }
 
-void free_queue(queue_pt q) {
-    free_list(q->first);
+void free_queue(queue_pt q, void (*destroy)(void*)) {
+    free_plist(q->first, destroy);
     free(q);
 }
