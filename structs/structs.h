@@ -1,5 +1,9 @@
 #ifndef STRUCTS
 #define STRUCTS
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stddef.h>
 
 /* LIST */
@@ -49,5 +53,9 @@ void queue_push(queue_pt q, void* val);
 void* queue_pop(queue_pt q);
 void free_queue(queue_pt q, void (*destroy)(void*));
 
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

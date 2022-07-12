@@ -6,8 +6,14 @@
 
 void list_push_back(plist_t pl, void *value){
     pListNode list = pl->list;
-    if (list == NULL)
+    if (list == NULL){
+        pl->list = malloc(sizeof(struct ListNode));
+        list = pl->list;
+        list->value = value;
+        list->next = NULL;
+        list->prev = NULL;
         return;
+    }
     
     for (; list->next != NULL; list = list->next);
     list->next = (pListNode)malloc(sizeof(struct ListNode));
@@ -31,7 +37,18 @@ int list_delete_index(plist_t pl, const size_t index, void (*destroy)(void *)){
 }
 
 int list_delete_value(plist_t pl, void *value, int (*is_equal)(void *, void *), void (*destroy)(void *)) {
-    pListNode list = pl->list; 
+    pListNode list = pl->list;
+    if(is_equal(list->value, value)) {
+        pl->list = list->next;
+        if(pl->list) {
+            pl->list->prev = list->prev;
+            if (list->prev) {
+                list->prev->next = pl->list;
+            }
+        }
+        destroy(list->value);
+        free(list);
+    } 
     if(list->next != NULL)
         list = list->next;
     for(;!is_equal(list->value, value) && list->next != NULL; list = list->next);
@@ -67,8 +84,10 @@ plist_t create_list(size_t length, void* (*generator)(const size_t i)) {
 
 void free_list(plist_t pl, void (*destroy)(void *)) {
     pListNode list = pl->list; 
-    if (list == NULL)
+    if (list == NULL){
+        free(pl);
         return;
+    }
     if (list->next != NULL)
         list = list->next;
     for(; list->next != NULL; list = list->next){

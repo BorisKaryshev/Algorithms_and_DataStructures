@@ -3,8 +3,9 @@
 
 pb_tree_t create_bin_tree(
     size_t length, 
-    BIN_TREE_TYPE (*generator)(const size_t i), 
-    int (*is_bigger)(const BIN_TREE_TYPE a, const BIN_TREE_TYPE b)
+    void * (*generator)(const size_t i), 
+    int (*is_bigger)(const void *, const void *),
+    void (*destroy)(void *)
 ) {
     pb_tree_t out = (pb_tree_t) malloc(sizeof(struct bin_tree_s));
     out->is_bigger = is_bigger;
@@ -12,25 +13,33 @@ pb_tree_t create_bin_tree(
     if (length == 0) 
         return out;
         
-    for(size_t i = 0; i < length; i++)
-        bin_tree_append(generator(i), out);
-
+    for(size_t i = 0; i < length; i++) {
+        void *elem = generator(i);
+        int exists = bin_tree_contains(out, elem);
+        bin_tree_append(out, elem);
+        if(exists)
+            destroy(elem);
+    
+    }
     return out;
 }
-void recursive_free_bin_tree(struct bin_tree_node_s *pnode) {
-    if(pnode->left != NULL)
-        recursive_free_bin_tree(pnode->left);
-    if (pnode->right != NULL)
-        recursive_free_bin_tree(pnode->right);
+
+void recursive_free_bin_tree(struct bin_tree_node_s *pnode, void (*destroy)(void *)) {
+    if(pnode == NULL)
+        return;
+    recursive_free_bin_tree(pnode->left, destroy);
+    recursive_free_bin_tree(pnode->right, destroy);
+    destroy(pnode->value);
     free(pnode);
 }
-void free_bin_tree(pb_tree_t p) {
+
+void free_bin_tree(pb_tree_t p, void (*destroy)(void *)) {
     if(p->root != NULL)
-        recursive_free_bin_tree(p->root);    
+        recursive_free_bin_tree(p->root, destroy);    
     free(p);
 }
 
-void bin_tree_append(BIN_TREE_TYPE value, pb_tree_t ptree) {
+void bin_tree_append(pb_tree_t ptree, void *value) {
     if (ptree->root == NULL) {
         ptree->root = (struct bin_tree_node_s *) malloc(sizeof(struct bin_tree_node_s));
         
@@ -43,7 +52,7 @@ void bin_tree_append(BIN_TREE_TYPE value, pb_tree_t ptree) {
     }
     struct bin_tree_node_s *pnode = ptree->root;
     while(1) {
-        if (pnode->value == value) {
+        if (!ptree->is_bigger(value, pnode->value) && !ptree->is_bigger(pnode->value, value)) {
             pnode->count++;
             return;
         }
@@ -78,24 +87,26 @@ void bin_tree_append(BIN_TREE_TYPE value, pb_tree_t ptree) {
     }
 }
 
-void bin_recursive_for_each(struct bin_tree_node_s *pnode, void (*what_to_do)(BIN_TREE_TYPE*)) {
-    if (pnode->left != NULL)
-        bin_recursive_for_each(pnode->left, what_to_do);
-    what_to_do(&(pnode->value));
-    if (pnode->right != NULL)
-        bin_recursive_for_each(pnode->right, what_to_do);
-}
-void bin_tree_for_each(pb_tree_t ptree, void (*what_to_do)(BIN_TREE_TYPE*)) {
+
+void bin_tree_for_each(pb_tree_t ptree, void (*what_to_do)(void **)) {
+    void bin_recursive_for_each(struct bin_tree_node_s *pnode) {
+        if (pnode->left != NULL)
+            bin_recursive_for_each(pnode->left);
+        what_to_do(&pnode->value);
+        if (pnode->right != NULL)
+            bin_recursive_for_each(pnode->right);
+    }
+    
     if (ptree->root != NULL)
-        bin_recursive_for_each(ptree->root, what_to_do);
+        bin_recursive_for_each(ptree->root);
 }
 
-int bin_tree_delete(BIN_TREE_TYPE val, pb_tree_t ptree) {
+int bin_tree_delete(pb_tree_t ptree, void *val, void (*destroy)(void *)) {
     if (ptree->root == NULL)
         return 0;
     struct bin_tree_node_s *pnode = ptree->root, *pprev = NULL;
-    int type;
-    while(pnode->value != val) {
+    int type, is_equal = !(ptree->is_bigger(val, pnode->value) || ptree->is_bigger(pnode->value, val));
+    while(!is_equal) {
         if (ptree->is_bigger(val, pnode->value)) {
             if (pnode->right != NULL) {
                 pprev = pnode;
@@ -111,6 +122,7 @@ int bin_tree_delete(BIN_TREE_TYPE val, pb_tree_t ptree) {
             } else 
                 return 0;
         }
+    is_equal = !(ptree->is_bigger(val, pnode->value) || ptree->is_bigger(pnode->value, val));
     }
     pnode->count--;
     if (pnode->count > 0)
@@ -119,15 +131,18 @@ int bin_tree_delete(BIN_TREE_TYPE val, pb_tree_t ptree) {
     if (pnode->right == NULL && pprev != NULL) {
         if (type == 1) {
             pprev->right = pnode->left;
+            destroy(pnode->value);
             free(pnode);
             return 1;
         } else {
             pprev->left = pnode->left;
+            destroy(pnode->value);
             free(pnode);
             return 1;
         }
     } else if (pnode->right == NULL) {
         ptree->root = pnode->left;
+        destroy(pnode->value);
         free(pnode);
         return 1;
     }
@@ -142,6 +157,7 @@ int bin_tree_delete(BIN_TREE_TYPE val, pb_tree_t ptree) {
             pprev->right = pnode->right;
         else
             ptree->root = pnode->right;
+        destroy(pnode->value);
         free(pnode);
         return 1;
     } else {
@@ -149,49 +165,59 @@ int bin_tree_delete(BIN_TREE_TYPE val, pb_tree_t ptree) {
             pprev->left = pnode->right;
         else
             ptree->root = pnode->right;
+        destroy(pnode->value);
         free(pnode);
         return 1;
     }
 
 }
 
-int bin_tree_contains(BIN_TREE_TYPE val, pb_tree_t ptree) {
+int bin_tree_contains(pb_tree_t ptree, void *value) {
     struct bin_tree_node_s *pnode = ptree->root;
-    while(pnode != NULL && pnode->value != val) {
-        if(ptree->is_bigger(val, pnode->value)) 
+    while(pnode != NULL) {
+        if (!ptree->is_bigger(value, pnode->value) && !ptree->is_bigger(pnode->value, value)) {
+            return 1;
+        }
+        if(ptree->is_bigger(value, pnode->value)) 
             pnode = pnode->right;
         else 
             pnode = pnode->left;
     }
-    if (pnode == NULL) 
-        return 0;
-    else 
-        return 1;
+    return 0;
 }
 
 /* AVL TREE */
 
 p_avl_tree_t create_avl_tree(
     size_t length,
-    AVL_TREE_TYPE (*generator)(const size_t i),
-    int (*is_bigger)(const AVL_TREE_TYPE, const AVL_TREE_TYPE)
+    void * (*generator)(const size_t i),
+    int (*is_bigger)(const void *, const void *),
+    void (*destroy)(void *)
 ) {
     p_avl_tree_t out = (p_avl_tree_t) malloc(sizeof(struct avl_tree_s));
     out->is_bigger = is_bigger;
     out->root = NULL;
-    for(size_t i = 0; i < length; i++)
-        avl_tree_append(generator(i), out);
+    for(size_t i = 0; i < length; i++) {
+        void *elem = generator(i);
+        int contains = avl_tree_contains(out, elem);
+        avl_tree_append(out, elem);
+        if (contains) {
+            destroy(elem);
+        }
+    }
 
     return out; 
 }
-void avl_recursive_free(struct avl_node_s* pnode) {
-    if(pnode->left != NULL)
-        avl_recursive_free(pnode->left);
-    if(pnode->right != NULL)
-        avl_recursive_free(pnode->right);
-    free(pnode);
-}
-void free_avl_tree(p_avl_tree_t p) {
+
+void free_avl_tree(p_avl_tree_t p, void (*destroy)(void *)) {
+    void avl_recursive_free(struct avl_node_s* pnode) {
+        if(pnode->left != NULL)
+            avl_recursive_free(pnode->left);
+        if(pnode->right != NULL)
+            avl_recursive_free(pnode->right);
+        destroy(pnode->value);
+        free(pnode);
+    }
     if(p->root != NULL)
         avl_recursive_free(p->root);
     free(p);
@@ -300,7 +326,6 @@ static int avl_is_balanced(struct avl_node_s *pnode) {
 
 
 static void avl_balance_tree(struct avl_node_s *pnode) {
-    //puts("Balancing tree");
     if(pnode->left != NULL) {
         struct avl_node_s *tmp = pnode->left;
         if ((tmp->height) * (tmp->height) > 1) {
@@ -325,7 +350,7 @@ static void avl_balance_tree(struct avl_node_s *pnode) {
         avl_balance_tree(pnode->right);
 }
 
-void avl_tree_append(AVL_TREE_TYPE val, p_avl_tree_t tree) {
+void avl_tree_append(p_avl_tree_t tree, void * val) {
     struct avl_node_s *pnode = tree->root;
     if (pnode == NULL) {
         tree->root = (struct avl_node_s *) malloc(sizeof(struct avl_node_s));
@@ -339,7 +364,7 @@ void avl_tree_append(AVL_TREE_TYPE val, p_avl_tree_t tree) {
         return; 
     }
     int is_new_created = 0;
-    while(pnode->value != val) {
+    while(tree->is_bigger(val, pnode->value) || tree->is_bigger(pnode->value, val)) {
         if (tree->is_bigger(val, pnode->value)) {
             if (pnode->right == NULL) {
                 pnode->right = (struct avl_node_s *)malloc(sizeof(struct avl_node_s));
@@ -392,25 +417,23 @@ void avl_tree_append(AVL_TREE_TYPE val, p_avl_tree_t tree) {
     
 }
 
-static void avl_draw_helper(struct avl_node_s *pnode, FILE *out) {
-    if (pnode->left != NULL)
-        fprintf(out, "\t\"%d\" -- \"%d\";\n", pnode->value, pnode->left->value);
-    if (pnode->right != NULL)
-        fprintf(out, "\t\"%d\" -- \"%d\";\n", pnode->value, pnode->right->value);
-    if (pnode->left != NULL)
-        avl_draw_helper(pnode->left, out);
-    if (pnode->right != NULL)
-        avl_draw_helper(pnode->right, out);
-    
-}
-
 #include <string.h>
 
-void avl_draw(p_avl_tree_t tree, const char *name) {
+void avl_draw(p_avl_tree_t tree, const char *name, void (*print_node)(struct avl_node_s *, FILE *out)) {
+
+
     FILE *out = fopen("output.dot", "w");
-    fputs("graph name {\n", out);
+    fputs("graph name {\n", out);    
+
+    void avl_draw_helper(struct avl_node_s *pnode) {
+        print_node(pnode, out);
+        if (pnode->left != NULL)
+            avl_draw_helper(pnode->left);
+        if (pnode->right != NULL)
+            avl_draw_helper(pnode->right);
+    }
     
-    avl_draw_helper(tree->root, out);
+    avl_draw_helper(tree->root);
 
     fputs("}", out);
     fclose(out);
@@ -425,74 +448,74 @@ void avl_draw(p_avl_tree_t tree, const char *name) {
     system("rm output.dot");
 }
 
-int avl_tree_delete(AVL_TREE_TYPE val, p_avl_tree_t tree) {
+int avl_tree_delete(p_avl_tree_t tree, void * val, void (*destroy)(void *)) {
     if (tree->root == NULL)
         return 0;
     struct avl_node_s *pnode = tree->root, *tmp;
-    if (tree->root->value == val) {
+    if (!tree->is_bigger(pnode->value, val) && !tree->is_bigger(val, pnode->value)) {
         pnode->count--;
-        if(pnode->count > 0)
+        if(pnode->count > 0) {
             return 1;
-        while(pnode->left != NULL)
-            pnode = pnode->left;
-        pnode->left = tree->root->left;
-        tmp = tree->root;
-        tree->root = tree->root->right;
-        free(tmp);
+        }
+        if (pnode->right == NULL) {
+            tmp = pnode;
+            tree->root = pnode->left;
+        } else {
+            tmp = pnode->right;
+            while(tmp->left != NULL) {
+                tmp = tmp->left;
+            }
+            tmp->left = pnode->left;
+            tree->root = pnode->right;
+        }
     } else {
-        while(1) {
-            if(pnode->value == val) {
-                pnode->count--;
-                if (pnode->count > 0)
-                    return 1;
-            }
-            if (pnode->left != NULL && pnode->left->value == val) {
-                tmp = pnode->left->right;
-                if (tmp == NULL) {
-                    tmp = pnode->left;
-                    pnode->left = tmp->left;
-                    free(tmp);
-                    break;
-                }
-                while (tmp->left != NULL) 
-                    tmp = tmp->left;
-                tmp->left = pnode->left->left;
-                tmp = pnode->left;
-                pnode->left = tmp->right;
-                free(tmp);
-
-                break;
-            } else if (pnode->right != NULL && pnode->right->value == val) {
-                tmp = pnode->right->right;
-                if(tmp == NULL) {
-                    tmp = pnode->right;
-                    pnode->right = tmp->left;
-                    free(tmp);
-                    break;
-                }
-                while(tmp->left != NULL)
-                    tmp = tmp->left;
-                tmp->left = pnode->right->left;
-                tmp = pnode->right;
-                pnode->right = tmp->right;
-                free(tmp);
-                break;
-            }
-            
-            if(tree->is_bigger(val, pnode->value)) {
-                if (pnode->right != NULL)
+        tmp = pnode;
+        int type, x;
+        while((x = tree->is_bigger(val, pnode->value) - tree->is_bigger(pnode->value, val)) != 0) {
+            type = x;
+            switch (x) {
+                case 1:
+                    if(pnode->right == NULL) {
+                        return 0;
+                    }
+                    tmp = pnode;
                     pnode = pnode->right;
-                else
-                    return 0;
-            } else {
-                if (pnode->left != NULL)
+                break;
+                case -1:
+                    if(pnode->left == NULL) {
+                        return 0;
+                    }
+                    tmp = pnode;
                     pnode = pnode->left;
-                else
-                    return 0;
+                    break;
             }
+        }
+        pnode->count--;
+        if(pnode->count > 0) {
+            return 1;
+        }
+        if(pnode->right == NULL) {
+            if (type > 0) {
+                tmp->right = pnode->left;
+            }
+            else {
+                tmp->left = pnode->left;
+            }
+        } else {
+            struct avl_node_s *node = pnode->right;
+            for(; node->left != NULL; node = node->left);
+            node->left = pnode->left;
+            if (type > 0)
+                tmp->right = pnode->right;
+            else 
+                tmp->left = pnode->right;
                 
         }
+
     }
+    destroy(pnode->value);
+    free(pnode);
+
     COUNT_BALANCE(tree->root);
     while(!avl_is_balanced(tree->root)){
         if ((tree->root->height) * (tree->root->height) > 1) {
@@ -506,26 +529,26 @@ int avl_tree_delete(AVL_TREE_TYPE val, p_avl_tree_t tree) {
     }   
 
 }
-int avl_tree_contains(AVL_TREE_TYPE val, p_avl_tree_t tree) {
+int avl_tree_contains(p_avl_tree_t tree, void * val) {
     struct avl_node_s *pnode = tree->root;
-    while (pnode != NULL && pnode->value != val) {
+    while (pnode != NULL) {
+        if (!tree->is_bigger(val, pnode->value) && !tree->is_bigger(pnode->value, val)) {
+            return 1;
+        }
         if (tree->is_bigger(val, pnode->value))
             pnode = pnode->right;
         else
             pnode = pnode->left;
     }
-    if (pnode == NULL)
-        return 0;
-    return 1;
+    return 0;
 }
 
-void avl_tree_for_each(p_avl_tree_t tree, void (*what_to_do)(AVL_TREE_TYPE*)) {
+void avl_tree_for_each(p_avl_tree_t tree, void (*what_to_do)(void **)) {
     void avl_for_each_helper(struct avl_node_s * pnode) {
         if (pnode == NULL)
             return;
 
         avl_for_each_helper(pnode->left);
-        //printf("|%d|", pnode->height);
         what_to_do(&pnode->value);
         avl_for_each_helper(pnode->right);
     };
