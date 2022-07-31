@@ -2,56 +2,104 @@
 #include <stdlib.h>
 #include <time.h>
 
-ARRAY_TYPE gen(const size_t i) {
-    return rand()%50;
-}
+#define TYPE short
+#define RANGE (100)
 
-int cmp(const ARRAY_TYPE a, const ARRAY_TYPE b) {
-    return a > b;
-}
+void *gen(const size_t i) {
+    TYPE *out = malloc(sizeof(TYPE));
+    *out = rand()%RANGE;
+    return out;
+};
 
-#define print(a) { \
-    for(size_t i = 0; i < a.size; i++)\
-        printf("%d ", a.ptr[i]); \
-    putchar('\n'); \
-}
+int cmp(const void *a, const void *b) {
+    const TYPE *x = a;
+    const TYPE *y = b;
+    return *x > *y;
+};
 
-void test_sort(const array_t ar, void (*sort)(array_t a, int (*is_bigger)(const ARRAY_TYPE a, const ARRAY_TYPE b))) {
+void destr_free(void *p) {
+    TYPE *q = p;
+    free(q);
+};
+
+void destr(void *p) {};
+
+int check(TYPE *begin, TYPE *end) {
+    for(;begin != end-1; ++begin) {
+        if(cmp(begin, begin+1))
+            return 0;
+    }
+    return 1;
+};
+
+void print(array_t ar) {
+    for(size_t i = 0; i < ar.size; ++i) {
+        printf("%d ", ((TYPE *) ar.ptr)[i]);
+    }
+    putchar('\n');
+};
+
+double sort_helper(array_t ar, 
+                  void (*sort)(void *, 
+                               void *, 
+                               size_t, 
+                               int(*)(const void *, const void *))
+) {
     array_t tmp = copy_array(ar);
 
-    clock_t end, begin = clock();
-    sort(tmp, cmp);
-    end = clock();
-
-    int is_sorted = 1;
-    for (int i = 1; i < tmp.size; i++)
-        if(cmp(tmp.ptr[i-1], tmp.ptr[i]))
-            is_sorted = 0;
-
-    if(is_sorted)
-        printf("Sorting %d elements took %3.6f seconds\n", tmp.size, difftime(end, begin)/CLOCKS_PER_SEC);
-    else{
-        puts("ERROR: array isn`t sorted.");
-        print(ar);
-        print(tmp);
+    clock_t finish, start;
+    start = clock();
+    sort(tmp.ptr, tmp.ptr + tmp.type_size * (tmp.size + 1), tmp.type_size, cmp);
+    finish = clock();
+    if(check(tmp.ptr, tmp.ptr + tmp.type_size * (tmp.size + 1))) {
+        destroy_array(tmp, destr);
+        return difftime(finish, start);
+    } else {
+        destroy_array(tmp, destr);
+        return -1;
     }
-
-    destroy_array(tmp);
-}
+};
 
 int main(void) {
-    size_t sz = 1000;
     srand(time(NULL));
-    array_t ar = init_array(sz, gen);
+    const size_t sz = 10;
+    array_t ar = init_array(10000, sizeof(TYPE), gen, destr_free);
 
+    double time = sort_helper(ar, buble_sort);
+    if(time != -1) {
+        printf("Array of %d elements sorted succesefully. It took %f seconds\n", ar.size, time/CLOCKS_PER_SEC);
+    } else {
+        puts("Error: array was't sorted");
+    }
+
+    time = sort_helper(ar, selection_sort);
+    if(time != -1) {
+        printf("Array of %d elements sorted succesefully. It took %f seconds\n", ar.size, time/CLOCKS_PER_SEC);
+    } else {
+        puts("Error: array was't sorted");
+    }
+
+    time = sort_helper(ar, insertion_sort);
+    if(time != -1) {
+        printf("Array of %d elements sorted succesefully. It took %f seconds\n", ar.size, time/CLOCKS_PER_SEC);
+    } else {
+        puts("Error: array was't sorted");
+    } 
+
+    time = sort_helper(ar, shell_sort);
+    if(time != -1) {
+        printf("Array of %d elements sorted succesefully. It took %f seconds\n", ar.size, time/CLOCKS_PER_SEC);
+    } else {
+        puts("Error: array was't sorted");
+    }
     
-    test_sort(ar, buble_sort);
-    test_sort(ar, selection_sort);
-    test_sort(ar, insertion_sort); 
-    test_sort(ar, shell_sort);
-    test_sort(ar, countintg_sort);
+    time = sort_helper(ar, countintg_sort);
+    if(time != -1) {
+        printf("Array of %d elements sorted succesefully. It took %f seconds\n", ar.size, time/CLOCKS_PER_SEC);
+    } else {
+        puts("Error: array was't sorted");
+    }
 
-
-    destroy_array(ar);
+    destroy_array(ar, destr);
     return 0;
-}
+};

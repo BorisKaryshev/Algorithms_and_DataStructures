@@ -1,11 +1,13 @@
 default_target: all
 
-CC = gcc
+CC = gcc -g
 PROG = main
 OBJS = ./objs/main.o ./objs/sorting_algorithms.o ./objs/array_t.o ./objs/trees.o
 OL = 0
 
-all: $(OBJS)
+all: main
+
+main: $(OBJS) 
 	$(CC) $(OBJS) -o $(PROG)
 
 ./objs/main.o: main.c sort.h ./lib/trees.h
