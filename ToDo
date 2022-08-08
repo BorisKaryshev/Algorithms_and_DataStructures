@@ -4,14 +4,14 @@ I. Sorting algorithms.
     3) Selection sort.                  DONE
     4) Counting sort.                   DONE
     5) Shell sort.                      DONE
-    6) Merge sort.          
-    7) Quick sort.          
-    8) Heap sort.
-    9) Radix sort.
-    10) Bucket sort.
-    BONUS: BOGO sort.
+    6) Merge sort.                      
+    7) Quick sort.                      
+    8) Heap sort.                       
+    9) Radix sort.                      
+    10) Bucket sort.                    
+    BONUS: BOGO sort.                   
 
-Basic algorithms set for DS is insert, delete, find.
+Basic algorithms set for each data structure is insert, delete, find.
 II. Data structures and some algorithms.
     1) Stack.                           DONE
     2) Queue.                           DONE
