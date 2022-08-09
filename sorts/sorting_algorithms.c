@@ -42,7 +42,7 @@ void selection_sort(void *begin, void *end, size_t type_size,
 void insertion_sort(void *begin, void *end, size_t type_size, 
                 int (*is_bigger)(const void *a, const void *b)
 ) {
-    for(char *i = begin + type_size; i != end - type_size; i += type_size) {
+    for(char *i = begin + type_size; i != end; i += type_size) {
         for(char *j = i; j != begin && is_bigger(j - type_size, j); j -= type_size) {
             swap(j - type_size, j, type_size);
         }
@@ -97,4 +97,38 @@ void countintg_sort(void *begin, void *end, size_t type_size,
     };
     ar_from_tree(tree->root);
     free_bin_tree(tree, destr);
+};
+
+void quick_sort(void *begin, void *end, size_t type_size, 
+                int (*is_bigger)(const void *a, const void *b)
+) {
+    if(((char *) end) - ((char *) begin) <= type_size) {
+        return;
+    }
+    char *op = begin;// + (end - begin - type_size);
+    for(char *i = begin; i != op; i += type_size) {
+        if (is_bigger(i, op)) {
+            char *p = op - type_size;
+            swap(p, i, type_size);
+            swap(p, op, type_size);
+            op -= type_size;
+            i -= type_size;
+        }
+    }
+    for(char *i = op; i != end; i += type_size) {
+        if(is_bigger(op, i)) {
+            char *p = op + type_size;
+            swap(p, i, type_size);
+            swap(p, op, type_size);
+            op += type_size;
+            i -= type_size;
+        }
+    }    
+
+    //for(char *i = begin; i != end; i += type_size) {
+    //    printf("%d ", *i);
+    //}
+    //putchar('\n');
+    quick_sort(begin, op, type_size, is_bigger);
+    quick_sort(op + type_size, end, type_size, is_bigger);
 };

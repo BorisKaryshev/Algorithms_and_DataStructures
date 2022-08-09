@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <time.h>
 
-#define TYPE short
-#define RANGE (100)
+#define TYPE int
+#define RANGE (1000)
 
 void *gen(const size_t i) {
     TYPE *out = malloc(sizeof(TYPE));
@@ -46,12 +46,11 @@ double sort_helper(array_t ar,
                                int(*)(const void *, const void *))
 ) {
     array_t tmp = copy_array(ar);
-
     clock_t finish, start;
     start = clock();
-    sort(tmp.ptr, tmp.ptr + tmp.type_size * (tmp.size + 1), tmp.type_size, cmp);
+    sort(tmp.ptr, tmp.ptr + tmp.type_size * (tmp.size), tmp.type_size, cmp);
     finish = clock();
-    if(check(tmp.ptr, tmp.ptr + tmp.type_size * (tmp.size + 1))) {
+    if(check(tmp.ptr, tmp.ptr + tmp.type_size * (tmp.size))) {
         destroy_array(tmp, destr);
         return difftime(finish, start);
     } else {
@@ -62,8 +61,7 @@ double sort_helper(array_t ar,
 
 int main(void) {
     srand(time(NULL));
-    const size_t sz = 10;
-    array_t ar = init_array(10000, sizeof(TYPE), gen, destr_free);
+    array_t ar = init_array(30000, sizeof(TYPE), gen, destr_free);
 
     double time = sort_helper(ar, buble_sort);
     if(time != -1) {
@@ -94,6 +92,13 @@ int main(void) {
     }
     
     time = sort_helper(ar, countintg_sort);
+    if(time != -1) {
+        printf("Array of %d elements sorted succesefully. It took %f seconds\n", ar.size, time/CLOCKS_PER_SEC);
+    } else {
+        puts("Error: array was't sorted");
+    }
+
+    time = sort_helper(ar, quick_sort);
     if(time != -1) {
         printf("Array of %d elements sorted succesefully. It took %f seconds\n", ar.size, time/CLOCKS_PER_SEC);
     } else {

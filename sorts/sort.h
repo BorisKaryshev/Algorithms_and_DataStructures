@@ -39,4 +39,7 @@ void countintg_sort(void *begin, void *end, size_t type_size,
                 int (*is_bigger)(const void *a, const void *b)
 );
 
+void quick_sort(void *begin, void *end, size_t type_size, 
+                int (*is_bigger)(const void *a, const void *b)
+);
 #endif
