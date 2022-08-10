@@ -1,6 +1,7 @@
-#include <stdio.h>
-#ifndef SORT
-#define SORT
+#ifndef SORT_H
+#define SORT_H
+#include <stddef.h>
+/* ARRAY */
 
 void swap(void *x, void *y, size_t size);
 
@@ -18,6 +19,9 @@ array_t init_array(size_t sz,
 
 void destroy_array(array_t a, void (*destroy_elem)(void *));
 array_t copy_array(const array_t ar);
+
+
+/* SORTING */
 
 void buble_sort(void *begin, void *end, size_t type_size, 
                 int (*is_bigger)(const void *a, const void *b)
@@ -42,4 +46,9 @@ void countintg_sort(void *begin, void *end, size_t type_size,
 void quick_sort(void *begin, void *end, size_t type_size, 
                 int (*is_bigger)(const void *a, const void *b)
 );
+
+void merge_sort_array(void *begin, void *end, size_t type_size, 
+                int (*is_bigger)(const void *a, const void *b)
+);
+
 #endif
