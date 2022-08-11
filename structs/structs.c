@@ -137,9 +137,12 @@ void free_stack(stack_pt st, void (*destroy)(void*)) {
 
 void* stack_pop(stack_pt st) {
     if (st->first != NULL) {
-        return st->first->value;
+        pListNode tmp = st->first;
+        void *out = st->first->value;
+        st->first = tmp->next;
+        free(tmp); 
+        return out;
     }
-    puts("ERROR: stack is empty.");
     return NULL;
 }
 void list_for_each(plist_t pl, void(*to_do)(void*)) {
